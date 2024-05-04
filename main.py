@@ -5,11 +5,13 @@ from terminaltables import AsciiTable
 from dotenv import load_dotenv
 
 
-def get_hh(lang, page=0):
+def get_vacancies_hh(lang, page=0):
+    city = '1'
+    period = 30
     params = {
         'text': f'программист {lang}',
-        'area': '1',
-        'period': 30,
+        'area': city,
+        'period': period,
         'page': page
     }
     response = requests.get('https://api.hh.ru/vacancies', params=params)
@@ -19,31 +21,26 @@ def get_hh(lang, page=0):
 
 def predict_rub_salary_for_hh():
     languages = ['Ruby', 'Python']
-    info_vacancy = {}
+    vacancy_statistics = {}
     for lang in languages:
         all_salaries = []
         for page in count(0):
-            vacancy = get_hh(lang, page=page)
-            if page >= vacancy['pages'] - 1:
+            vacancies = get_vacancies_hh(lang, page=page)
+            if page >= vacancies['pages'] - 1:
                 break
-            for item in vacancy['items']:
-                salary = item.get('salary')
+            for vacancy in vacancies['items']:
+                salary = vacancy.get('salary')
                 if salary and salary['currency'] == 'RUR':
-                    if salary['from'] is None:
-                        all_salaries.append(salary['to'] * 0.8)
-                    elif salary['to'] is None:
-                        all_salaries.append(salary['from'] * 1.2)
-                    else:
-                        all_salaries.append((salary['from'] + salary['to']) / 2)
-        info_vacancy[lang] = {
-            'vacancies_found': vacancy['ncyfound'],
+                    get_salaries(salary['from'], salary['to'], all_salaries)
+        vacancy_statistics[lang] = {
+            'vacancies_found': vacancies['found'],
             'vacancies_processed': len(all_salaries),
             'average_salary': int(sum(all_salaries) / len(all_salaries))
         }        
-    return info_vacancy
+    return vacancy_statistics
 
 
-def get_sj(lang, sj_key, page=0):
+def get_vacancies_sj(lang, sj_key, page=0):
     url = 'https://api.superjob.ru/2.0/vacancies'
     headers = {
         'X-Api-App-Id': sj_key
@@ -59,38 +56,47 @@ def get_sj(lang, sj_key, page=0):
 
 def predict_rub_salary_for_superJob(sj_key):
     languages = ['Go']
-    info_vacancy = {}
+    vacancy_statistics = {}
     for lang in languages:
         all_salaries = []
         for page in count(0):
-            vacancy = get_sj(lang, sj_key, page=page)
-            if not vacancy['objects']:
+            vacancies = get_vacancies_sj(lang, sj_key, page=page)
+            if not vacancies['objects']:
                 break
-            for object in vacancy['objects']:
-                if object['payment_to'] and object['payment_from']:
-                    all_salaries.append((object['payment_from'] + object['payment_to']) / 2)
-                elif object['payment_from'] is None:
-                    all_salaries.append(object['payment_to'] * 0.8)
-                elif object['payment_to'] is None:
-                    all_salaries.append(object['payment_from'] * 1.2)
+            for vacancy in vacancies['objects']:
+                get_salaries(vacancy['payment_from'], vacancy['payment_to'], all_salaries)
         average_salary = None
         if all_salaries:
             average_salary = int(sum(all_salaries) / len(all_salaries))
-        info_vacancy[lang] = {
-            "vacancies_found": vacancy['total'],
+        vacancy_statistics[lang] = {
+            "vacancies_found": vacancies['total'],
             "vacancies_processed": len(all_salaries),
             "average_salary": average_salary
             }
-    return info_vacancy
+    return vacancy_statistics
     
 
+def get_salaries(salary_from, salary_to, all_salaries):
+    if salary_from and salary_to:
+        all_salaries.append((salary_from + salary_to) / 2)
+    elif salary_from:
+        all_salaries.append(salary_from * 1.2)
+    elif salary_to:
+        all_salaries.append(salary_to * 0.8)
+
+
 def create_table(title, statistic):
-    table_data = [
+    statistics_table = [
         ['Язык программирования', 'Вакансий найдено', 'Вакансий обработано', 'Средняя зп']
     ]
-    for lang, info in statistic.items():
-        table_data.append([lang, info['vacancies_found'], info['vacancies_processed'], info['average_salary']])
-    table = AsciiTable(table_data, title)
+    for lang, table_content in statistic.items():
+        statistics_table.append(
+            [lang, table_content['vacancies_found'], 
+             table_content['vacancies_processed'], 
+             table_content['average_salary']
+            ]
+        )
+    table = AsciiTable(statistics_table, title)
     return table.table
     
 
