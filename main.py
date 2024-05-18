@@ -73,7 +73,7 @@ def predict_rub_salary_for_superJob(sj_key):
             "vacancies_found": vacancies['total'],
             "vacancies_processed": len(all_salaries),
             "average_salary": average_salary
-            }
+        }
     return vacancy_statistics
     
 
@@ -94,7 +94,8 @@ def create_table(title, statistic):
     ]
     for lang, table_content in statistic.items():
         statistics_table.append(
-            [lang, table_content['vacancies_found'], 
+             [
+             lang, table_content['vacancies_found'], 
              table_content['vacancies_processed'], 
              table_content['average_salary']
             ]
