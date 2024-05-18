@@ -31,10 +31,13 @@ def predict_rub_salary_for_hh():
                 salary = vacancy.get('salary')
                 if salary and salary['currency'] == 'RUR':
                     all_salaries = get_salaries(salary['from'], salary['to'])
+        average_salary = None
+        if all_salaries:
+            average_salary = int(sum(all_salaries) / len(all_salaries))
         vacancy_statistics[lang] = {
             'vacancies_found': vacancies['found'],
             'vacancies_processed': len(all_salaries),
-            'average_salary': int(sum(all_salaries) / len(all_salaries))
+            'average_salary': average_salary
         }        
     return vacancy_statistics
 
