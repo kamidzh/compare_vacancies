@@ -23,7 +23,6 @@ def predict_rub_salary_for_hh():
     languages = ['Ruby', 'Python']
     vacancy_statistics = {}
     for lang in languages:
-        all_salaries = []
         for page in count(0):
             vacancies = get_vacancies_hh(lang, page=page)
             if page >= vacancies['pages'] - 1:
@@ -31,7 +30,7 @@ def predict_rub_salary_for_hh():
             for vacancy in vacancies['items']:
                 salary = vacancy.get('salary')
                 if salary and salary['currency'] == 'RUR':
-                    get_salaries(salary['from'], salary['to'], all_salaries)
+                    all_salaries = get_salaries(salary['from'], salary['to'])
         vacancy_statistics[lang] = {
             'vacancies_found': vacancies['found'],
             'vacancies_processed': len(all_salaries),
@@ -58,13 +57,12 @@ def predict_rub_salary_for_superJob(sj_key):
     languages = ['Go']
     vacancy_statistics = {}
     for lang in languages:
-        all_salaries = []
-        for page in count(0):
+        for page in count(0, 1):
             vacancies = get_vacancies_sj(lang, sj_key, page=page)
             if not vacancies['objects']:
                 break
             for vacancy in vacancies['objects']:
-                get_salaries(vacancy['payment_from'], vacancy['payment_to'], all_salaries)
+                all_salaries = get_salaries(vacancy['payment_from'], vacancy['payment_to'])
         average_salary = None
         if all_salaries:
             average_salary = int(sum(all_salaries) / len(all_salaries))
@@ -76,13 +74,15 @@ def predict_rub_salary_for_superJob(sj_key):
     return vacancy_statistics
     
 
-def get_salaries(salary_from, salary_to, all_salaries):
+def get_salaries(salary_from, salary_to):
+    all_salaries = []
     if salary_from and salary_to:
         all_salaries.append((salary_from + salary_to) / 2)
     elif salary_from:
         all_salaries.append(salary_from * 1.2)
     elif salary_to:
         all_salaries.append(salary_to * 0.8)
+    return all_salaries
 
 
 def create_table(title, statistic):
