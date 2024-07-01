@@ -5,6 +5,18 @@ from terminaltables import AsciiTable
 from dotenv import load_dotenv
 
 
+def get_salary(salary_from=None, salary_to=None):
+    if salary_from and salary_to:
+        salary = (salary_from + salary_to) / 2
+    elif salary_from:
+        salary = salary_from * 1.2
+    elif salary_to:
+        salary = salary_to * 0.8
+    else:
+        salary = None
+    return salary
+
+
 def get_vacancies_hh(lang, page=0):
     city = '1'
     period = 30
@@ -23,6 +35,7 @@ def predict_rub_salary_for_hh():
     languages = ['Ruby', 'Python']
     vacancy_statistics = {}
     for lang in languages:
+        all_salaries = []
         for page in count(0):
             vacancies = get_vacancies_hh(lang, page=page)
             if page >= vacancies['pages'] - 1:
@@ -30,7 +43,8 @@ def predict_rub_salary_for_hh():
             for vacancy in vacancies['items']:
                 salary = vacancy.get('salary')
                 if salary and salary['currency'] == 'RUR':
-                    all_salaries = get_salaries(salary['from'], salary['to'])
+                    salaries = get_salary(salary['from'], salary['to'])
+                    all_salaries.append(salaries)
         average_salary = None
         if all_salaries:
             average_salary = int(sum(all_salaries) / len(all_salaries))
@@ -57,15 +71,17 @@ def get_vacancies_sj(lang, sj_key, page=0):
     
 
 def predict_rub_salary_for_superJob(sj_key):
-    languages = ['Go']
+    languages = ['C']
     vacancy_statistics = {}
     for lang in languages:
+        all_salaries = []
         for page in count(0, 1):
             vacancies = get_vacancies_sj(lang, sj_key, page=page)
             if not vacancies['objects']:
                 break
             for vacancy in vacancies['objects']:
-                all_salaries = get_salaries(vacancy['payment_from'], vacancy['payment_to'])
+                salaries = get_salary(vacancy['payment_from'], vacancy['payment_to'])
+                all_salaries.append(salaries)
         average_salary = None
         if all_salaries:
             average_salary = int(sum(all_salaries) / len(all_salaries))
@@ -75,17 +91,6 @@ def predict_rub_salary_for_superJob(sj_key):
             "average_salary": average_salary
         }
     return vacancy_statistics
-    
-
-def get_salaries(salary_from, salary_to):
-    all_salaries = []
-    if salary_from and salary_to:
-        all_salaries.append((salary_from + salary_to) / 2)
-    elif salary_from:
-        all_salaries.append(salary_from * 1.2)
-    elif salary_to:
-        all_salaries.append(salary_to * 0.8)
-    return all_salaries
 
 
 def create_table(title, statistic):
@@ -94,10 +99,11 @@ def create_table(title, statistic):
     ]
     for lang, table_content in statistic.items():
         statistics_table.append(
-             [
-             lang, table_content['vacancies_found'], 
-             table_content['vacancies_processed'], 
-             table_content['average_salary']
+            [
+                lang, 
+                table_content['vacancies_found'], 
+                table_content['vacancies_processed'], 
+                table_content['average_salary']
             ]
         )
     table = AsciiTable(statistics_table, title)
