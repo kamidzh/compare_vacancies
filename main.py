@@ -43,8 +43,8 @@ def predict_rub_salary_for_hh():
             for vacancy in vacancies['items']:
                 salary = vacancy.get('salary')
                 if salary and salary['currency'] == 'RUR':
-                    salaries = get_salary(salary['from'], salary['to'])
-                    all_salaries.append(salaries)
+                    hh_salary = get_salary(salary['from'], salary['to'])
+                    all_salaries.append(hh_salary)
         average_salary = None
         if all_salaries:
             average_salary = int(sum(all_salaries) / len(all_salaries))
@@ -80,8 +80,8 @@ def predict_rub_salary_for_superJob(sj_key):
             if not vacancies['objects']:
                 break
             for vacancy in vacancies['objects']:
-                salaries = get_salary(vacancy['payment_from'], vacancy['payment_to'])
-                all_salaries.append(salaries)
+                sj_salary = get_salary(vacancy['payment_from'], vacancy['payment_to'])
+                all_salaries.append(sj_salary)
         average_salary = None
         if all_salaries:
             average_salary = int(sum(all_salaries) / len(all_salaries))
